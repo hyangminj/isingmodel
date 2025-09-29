@@ -1,0 +1,11 @@
+# Compiled binaries
+ising1d
+ising2d
+test_pcg
+
+# Object files
+*.o
+
+# Other compiled outputs
+*.out
+*.exe
