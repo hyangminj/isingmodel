@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-#include"twist.c"
+#include"pcg_random.h"
 
 typedef struct conf{
 		int spin;
