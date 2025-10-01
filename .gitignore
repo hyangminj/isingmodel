@@ -1,6 +1,7 @@
 # Compiled binaries
 ising1d
 ising2d
+ising2d_fss
 test_pcg
 
 # Object files
