@@ -14,11 +14,9 @@ void mcstep(double T, int N, Ising *S);
 double magnetization(int N, Ising *S);
 double energy(int N, Ising *S);
 
-int main(int argc, char **argv)
+int main(int argc __attribute__((unused)), char **argv)
 {
 		int N;
-		int i;
-		int j;
 		int time;
 		Ising *S;
 		double T;

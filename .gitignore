@@ -9,3 +9,4 @@ test_pcg
 # Other compiled outputs
 *.out
 *.exe
+*.txt
