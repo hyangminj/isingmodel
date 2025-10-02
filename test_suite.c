@@ -11,9 +11,13 @@ void test_pcg_reproducibility(void);
 void test_ising_physics(void);
 void test_binder_cumulant(void);
 void test_fss_multiple_sizes(void);
+void test_ising_3d_physics(void);
+void test_binder_cumulant_3d(void);
 int run_mini_ising1d(int N, double T, int steps);
 double run_mini_ising2d(int N, double T, int steps);
+double run_mini_ising3d(int N, double T, int steps);
 double calculate_binder_cumulant(int N, double T, int steps);
+double calculate_binder_cumulant_3d(int N, double T, int steps);
 
 int main(void) {
     printf("=== Ising Model Test Suite ===\n\n");
@@ -35,6 +39,14 @@ int main(void) {
     printf("4. Testing Finite-Size Scaling...\n");
     test_fss_multiple_sizes();
     printf("   ✓ FSS tests passed\n\n");
+
+    printf("5. Testing 3D Ising Model Physics...\n");
+    test_ising_3d_physics();
+    printf("   ✓ 3D Physics tests passed\n\n");
+
+    printf("6. Testing 3D Binder Cumulant...\n");
+    test_binder_cumulant_3d();
+    printf("   ✓ 3D Binder cumulant tests passed\n\n");
 
     printf("=== All Tests Passed! ===\n");
     return 0;
@@ -324,4 +336,208 @@ void test_fss_multiple_sizes(void) {
     assert(!all_same);  // Binder cumulants should vary with system size
 
     printf("   - FSS shows size-dependent behavior ✓\n");
+}
+
+// Simplified 3D Ising simulation for testing
+double run_mini_ising3d(int N, double T, int steps) {
+    int ***spins = malloc(N * sizeof(int**));
+    for (int i = 0; i < N; i++) {
+        spins[i] = malloc(N * sizeof(int*));
+        for (int j = 0; j < N; j++) {
+            spins[i][j] = malloc(N * sizeof(int));
+        }
+    }
+
+    init_rnd(789);
+
+    // Initialize random spins
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            for (int k = 0; k < N; k++) {
+                spins[i][j][k] = (drnd() < 0.5) ? 1 : -1;
+            }
+        }
+    }
+
+    // Monte Carlo steps
+    for (int step = 0; step < steps; step++) {
+        int i = (int)(drnd() * N);
+        int j = (int)(drnd() * N);
+        int k = (int)(drnd() * N);
+
+        int up = (j - 1 + N) % N;
+        int down = (j + 1) % N;
+        int left = (i - 1 + N) % N;
+        int right = (i + 1) % N;
+        int front = (k + 1) % N;
+        int back = (k - 1 + N) % N;
+
+        double dE = 2 * spins[i][j][k] * (spins[i][up][k] + spins[i][down][k] +
+                                          spins[left][j][k] + spins[right][j][k] +
+                                          spins[i][j][front] + spins[i][j][back]);
+
+        if (dE < 0 || drnd() < exp(-dE / T)) {
+            spins[i][j][k] = -spins[i][j][k];
+        }
+    }
+
+    // Calculate magnetization
+    int sum = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            for (int k = 0; k < N; k++) {
+                sum += spins[i][j][k];
+            }
+        }
+    }
+
+    double mag = fabs((double)sum / (N * N * N));
+
+    // Free memory
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            free(spins[i][j]);
+        }
+        free(spins[i]);
+    }
+    free(spins);
+
+    return mag;
+}
+
+void test_ising_3d_physics(void) {
+    // Test 1: High temperature should have low magnetization
+    double mag_high_T = run_mini_ising3d(8, 6.0, 5000);
+    printf("   - 3D Magnetization at T=6.0: %.3f\n", mag_high_T);
+    assert(mag_high_T < 0.3);  // Should be small at high T
+
+    // Test 2: Low temperature should have high magnetization
+    double mag_low_T = run_mini_ising3d(8, 0.5, 5000);
+    printf("   - 3D Magnetization at T=0.5: %.3f\n", mag_low_T);
+    assert(mag_low_T > 0.8);  // Should be large at low T
+
+    // Test 3: Near critical temperature (Tc ~ 4.51 for 3D)
+    double mag_crit = run_mini_ising3d(8, 4.5, 5000);
+    printf("   - 3D Magnetization at T=4.5 (near Tc): %.3f\n", mag_crit);
+    assert(mag_crit >= 0.0 && mag_crit <= 1.0);
+}
+
+// Calculate Binder cumulant for 3D Ising model
+double calculate_binder_cumulant_3d(int N, double T, int steps) {
+    int ***spins = malloc(N * sizeof(int**));
+    for (int i = 0; i < N; i++) {
+        spins[i] = malloc(N * sizeof(int*));
+        for (int j = 0; j < N; j++) {
+            spins[i][j] = malloc(N * sizeof(int));
+        }
+    }
+
+    init_rnd(1001);
+
+    // Initialize random spins
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            for (int k = 0; k < N; k++) {
+                spins[i][j][k] = (drnd() < 0.5) ? 1 : -1;
+            }
+        }
+    }
+
+    // Thermalization
+    for (int step = 0; step < steps/2; step++) {
+        int i = (int)(drnd() * N);
+        int j = (int)(drnd() * N);
+        int k = (int)(drnd() * N);
+
+        int up = (j - 1 + N) % N;
+        int down = (j + 1) % N;
+        int left = (i - 1 + N) % N;
+        int right = (i + 1) % N;
+        int front = (k + 1) % N;
+        int back = (k - 1 + N) % N;
+
+        double dE = 2 * spins[i][j][k] * (spins[i][up][k] + spins[i][down][k] +
+                                          spins[left][j][k] + spins[right][j][k] +
+                                          spins[i][j][front] + spins[i][j][back]);
+
+        if (dE < 0 || drnd() < exp(-dE / T)) {
+            spins[i][j][k] = -spins[i][j][k];
+        }
+    }
+
+    // Measurement
+    double M2_sum = 0.0;
+    double M4_sum = 0.0;
+    int measure_steps = steps/2;
+
+    for (int step = 0; step < measure_steps; step++) {
+        int i = (int)(drnd() * N);
+        int j = (int)(drnd() * N);
+        int k = (int)(drnd() * N);
+
+        int up = (j - 1 + N) % N;
+        int down = (j + 1) % N;
+        int left = (i - 1 + N) % N;
+        int right = (i + 1) % N;
+        int front = (k + 1) % N;
+        int back = (k - 1 + N) % N;
+
+        double dE = 2 * spins[i][j][k] * (spins[i][up][k] + spins[i][down][k] +
+                                          spins[left][j][k] + spins[right][j][k] +
+                                          spins[i][j][front] + spins[i][j][back]);
+
+        if (dE < 0 || drnd() < exp(-dE / T)) {
+            spins[i][j][k] = -spins[i][j][k];
+        }
+
+        // Calculate magnetization
+        int sum = 0;
+        for (int ii = 0; ii < N; ii++) {
+            for (int jj = 0; jj < N; jj++) {
+                for (int kk = 0; kk < N; kk++) {
+                    sum += spins[ii][jj][kk];
+                }
+            }
+        }
+        double m = fabs((double)sum / (N * N * N));
+        M2_sum += m * m;
+        M4_sum += m * m * m * m;
+    }
+
+    double M2 = M2_sum / measure_steps;
+    double M4 = M4_sum / measure_steps;
+
+    // Binder cumulant: U_L = 1 - <M^4>/(3<M^2>^2)
+    double U = (M2 > 1e-10) ? (1.0 - M4 / (3.0 * M2 * M2)) : 0.0;
+
+    // Free memory
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            free(spins[i][j]);
+        }
+        free(spins[i]);
+    }
+    free(spins);
+
+    return U;
+}
+
+void test_binder_cumulant_3d(void) {
+    // Test at high temperature (disordered phase)
+    double U_high = calculate_binder_cumulant_3d(6, 6.0, 3000);
+    printf("   - 3D Binder cumulant at T=6.0: %.3f\n", U_high);
+    // At high T, should be close to 0 (fully disordered)
+    assert(U_high >= -0.5 && U_high <= 0.5);
+
+    // Test at low temperature (ordered phase)
+    double U_low = calculate_binder_cumulant_3d(6, 1.0, 3000);
+    printf("   - 3D Binder cumulant at T=1.0: %.3f\n", U_low);
+    // At low T, should be close to 2/3 (fully ordered)
+    assert(U_low >= 0.3 && U_low <= 1.0);
+
+    // Test at critical temperature (should be around 0.61-0.63 for 3D Ising)
+    double U_crit = calculate_binder_cumulant_3d(8, 4.51, 5000);
+    printf("   - 3D Binder cumulant at T=4.51 (near Tc): %.3f\n", U_crit);
+    // Should be between 0.4 and 0.8 (universal value ~0.61-0.63)
+    assert(U_crit >= 0.4 && U_crit <= 0.8);
 }
