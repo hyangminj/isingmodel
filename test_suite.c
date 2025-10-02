@@ -5,14 +5,17 @@
 #include "pcg_random.h"
 
 // Test functions
-void test_pcg_basic();
-void test_pcg_distribution();
-void test_pcg_reproducibility();
-void test_ising_physics();
+void test_pcg_basic(void);
+void test_pcg_distribution(void);
+void test_pcg_reproducibility(void);
+void test_ising_physics(void);
+void test_binder_cumulant(void);
+void test_fss_multiple_sizes(void);
 int run_mini_ising1d(int N, double T, int steps);
 double run_mini_ising2d(int N, double T, int steps);
+double calculate_binder_cumulant(int N, double T, int steps);
 
-int main() {
+int main(void) {
     printf("=== Ising Model Test Suite ===\n\n");
 
     printf("1. Testing PCG Random Number Generator...\n");
@@ -25,11 +28,19 @@ int main() {
     test_ising_physics();
     printf("   ✓ Physics tests passed\n\n");
 
+    printf("3. Testing Binder Cumulant Calculation...\n");
+    test_binder_cumulant();
+    printf("   ✓ Binder cumulant tests passed\n\n");
+
+    printf("4. Testing Finite-Size Scaling...\n");
+    test_fss_multiple_sizes();
+    printf("   ✓ FSS tests passed\n\n");
+
     printf("=== All Tests Passed! ===\n");
     return 0;
 }
 
-void test_pcg_basic() {
+void test_pcg_basic(void) {
     init_rnd(42);
 
     // Test range [0, 1)
@@ -46,7 +57,7 @@ void test_pcg_basic() {
     assert(non_zero_count > 50);  // Should have many non-zero values
 }
 
-void test_pcg_distribution() {
+void test_pcg_distribution(void) {
     init_rnd(12345);
 
     double sum = 0.0;
@@ -63,7 +74,7 @@ void test_pcg_distribution() {
     printf("   - Distribution mean: %.3f (expected ~0.5)\n", mean);
 }
 
-void test_pcg_reproducibility() {
+void test_pcg_reproducibility(void) {
     // Test 1: Same seed should give same sequence
     init_rnd(999);
     double seq1[10];
@@ -84,7 +95,7 @@ void test_pcg_reproducibility() {
     printf("   - Reproducibility: ✓\n");
 }
 
-void test_ising_physics() {
+void test_ising_physics(void) {
     // Test 1: High temperature should have low magnetization
     double mag_high_T = run_mini_ising1d(50, 5.0, 10000);
     printf("   - Magnetization at T=5.0: %.3f\n", mag_high_T);
@@ -186,4 +197,131 @@ double run_mini_ising2d(int N, double T, int steps) {
     free(spins);
 
     return mag;
+}
+
+// Test Binder cumulant calculation
+void test_binder_cumulant(void) {
+    // Test at high temperature (disordered phase)
+    double U_high = calculate_binder_cumulant(10, 5.0, 5000);
+    printf("   - Binder cumulant at T=5.0: %.3f\n", U_high);
+    // At high T, should be close to 0 (fully disordered)
+    assert(U_high >= -0.5 && U_high <= 0.5);
+
+    // Test at low temperature (ordered phase)
+    double U_low = calculate_binder_cumulant(10, 0.5, 5000);
+    printf("   - Binder cumulant at T=0.5: %.3f\n", U_low);
+    // At low T, should be close to 2/3 (fully ordered)
+    assert(U_low >= 0.3 && U_low <= 1.0);
+
+    // Test at critical temperature (should be around 0.61 for 2D Ising)
+    double U_crit = calculate_binder_cumulant(16, 2.27, 10000);
+    printf("   - Binder cumulant at T=2.27 (near Tc): %.3f\n", U_crit);
+    // Should be between 0.4 and 0.8 (universal value ~0.61)
+    assert(U_crit >= 0.4 && U_crit <= 0.8);
+}
+
+// Calculate Binder cumulant for 2D Ising model
+double calculate_binder_cumulant(int N, double T, int steps) {
+    int **spins = malloc(N * sizeof(int*));
+    for (int i = 0; i < N; i++) {
+        spins[i] = malloc(N * sizeof(int));
+    }
+
+    init_rnd(789);
+
+    // Initialize random spins
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            spins[i][j] = (drnd() < 0.5) ? 1 : -1;
+        }
+    }
+
+    // Thermalization
+    for (int step = 0; step < steps/2; step++) {
+        int i = (int)(drnd() * N);
+        int j = (int)(drnd() * N);
+        int up = (i - 1 + N) % N;
+        int down = (i + 1) % N;
+        int left = (j - 1 + N) % N;
+        int right = (j + 1) % N;
+        double dE = 2 * spins[i][j] * (spins[up][j] + spins[down][j] +
+                                        spins[i][left] + spins[i][right]);
+        if (dE < 0 || drnd() < exp(-dE / T)) {
+            spins[i][j] = -spins[i][j];
+        }
+    }
+
+    // Measurement
+    double M2_sum = 0.0;
+    double M4_sum = 0.0;
+    int measure_steps = steps/2;
+
+    for (int step = 0; step < measure_steps; step++) {
+        int i = (int)(drnd() * N);
+        int j = (int)(drnd() * N);
+        int up = (i - 1 + N) % N;
+        int down = (i + 1) % N;
+        int left = (j - 1 + N) % N;
+        int right = (j + 1) % N;
+        double dE = 2 * spins[i][j] * (spins[up][j] + spins[down][j] +
+                                        spins[i][left] + spins[i][right]);
+        if (dE < 0 || drnd() < exp(-dE / T)) {
+            spins[i][j] = -spins[i][j];
+        }
+
+        // Calculate magnetization
+        int sum = 0;
+        for (int ii = 0; ii < N; ii++) {
+            for (int jj = 0; jj < N; jj++) {
+                sum += spins[ii][jj];
+            }
+        }
+        double m = fabs((double)sum / (N * N));
+        M2_sum += m * m;
+        M4_sum += m * m * m * m;
+    }
+
+    double M2 = M2_sum / measure_steps;
+    double M4 = M4_sum / measure_steps;
+
+    // Binder cumulant: U_L = 1 - <M^4>/(3<M^2>^2)
+    double U = (M2 > 1e-10) ? (1.0 - M4 / (3.0 * M2 * M2)) : 0.0;
+
+    // Free memory
+    for (int i = 0; i < N; i++) {
+        free(spins[i]);
+    }
+    free(spins);
+
+    return U;
+}
+
+// Test finite-size scaling with multiple system sizes
+void test_fss_multiple_sizes(void) {
+    int sizes[] = {8, 12, 16};
+    int num_sizes = 3;
+    double T_near_critical = 2.3;
+    double binders[3];
+
+    printf("   - Testing FSS for L = 8, 12, 16 at T=%.2f\n", T_near_critical);
+
+    for (int i = 0; i < num_sizes; i++) {
+        binders[i] = calculate_binder_cumulant(sizes[i], T_near_critical, 5000);
+        printf("     L=%d: U_L = %.3f\n", sizes[i], binders[i]);
+        // All should be in reasonable range (relaxed bounds due to statistical fluctuations)
+        assert(binders[i] >= 0.2 && binders[i] <= 0.9);
+    }
+
+    // Check that we have variation across sizes (not all identical)
+    // This tests that the simulation is actually running
+    int all_same = 1;
+    for (int i = 0; i < num_sizes - 1; i++) {
+        if (fabs(binders[i] - binders[i+1]) > 0.01) {
+            all_same = 0;
+            break;
+        }
+    }
+    assert(!all_same);  // Binder cumulants should vary with system size
+
+    printf("   - FSS shows size-dependent behavior ✓\n");
 }

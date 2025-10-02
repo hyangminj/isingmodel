@@ -1,7 +1,9 @@
 # Compiled binaries
 ising1d
 ising2d
+ising2d_fss
 test_pcg
+test_suite
 
 # Object files
 *.o
@@ -9,3 +11,4 @@ test_pcg
 # Other compiled outputs
 *.out
 *.exe
+*.txt
