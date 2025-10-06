@@ -3,7 +3,7 @@ CFLAGS = -Wall -O2 -std=c99
 LDFLAGS = -lm
 
 # Main programs
-PROGRAMS = ising1d ising2d
+PROGRAMS = ising1d ising2d ising3d ising2d_fss ising3d_fss
 TEST_PROGRAM = test_suite
 
 # Object files
@@ -15,6 +15,15 @@ ising1d: ising1d.c pcg_random.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 ising2d: ising2d.c pcg_random.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+ising3d: ising3d.c pcg_random.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+ising2d_fss: ising2d_fss.c pcg_random.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+ising3d_fss: ising3d_fss.c pcg_random.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 test_suite: test_suite.c pcg_random.h
@@ -35,6 +44,10 @@ test-2d:
 	@echo "Running 2D Ising model (N=5) for first 5 temperature points:"
 	@timeout 30s ./ising2d 5 | head -5 || echo "Test completed (may have timed out)"
 
+test-3d:
+	@echo "Running 3D Ising model (N=5) for first 5 temperature points:"
+	@timeout 30s ./ising3d 5 | head -5 || echo "Test completed (may have timed out)"
+
 benchmark:
 	@echo "=== Performance Benchmark ==="
 	@echo "1D Ising (N=100):"
@@ -48,8 +61,9 @@ help:
 	@echo "  test      - Run test suite"
 	@echo "  test-1d   - Quick test of 1D model"
 	@echo "  test-2d   - Quick test of 2D model"
+	@echo "  test-3d   - Quick test of 3D model"
 	@echo "  benchmark - Performance benchmark"
 	@echo "  clean     - Remove executables"
 	@echo "  help      - Show this help"
 
-.PHONY: all test clean test-1d test-2d benchmark help
+.PHONY: all test clean test-1d test-2d test-3d benchmark help

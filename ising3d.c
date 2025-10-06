@@ -11,7 +11,7 @@ typedef struct Ising {
 int N;
 Ising ***lattice;
 
-void initialize() {
+void allocate_lattice() {
     int i, j, k;
 
     // Allocate 3D lattice
@@ -20,15 +20,6 @@ void initialize() {
         lattice[i] = (Ising **)malloc(N * sizeof(Ising *));
         for (j = 0; j < N; j++) {
             lattice[i][j] = (Ising *)malloc(N * sizeof(Ising));
-        }
-    }
-
-    // Initialize random spins
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-            for (k = 0; k < N; k++) {
-                lattice[i][j][k].spin = (drnd() < 0.5) ? 1 : -1;
-            }
         }
     }
 
@@ -45,6 +36,32 @@ void initialize() {
             }
         }
     }
+}
+
+void reset_spins() {
+    int i, j, k;
+
+    // Initialize random spins
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            for (k = 0; k < N; k++) {
+                lattice[i][j][k].spin = (drnd() < 0.5) ? 1 : -1;
+            }
+        }
+    }
+}
+
+void cleanup() {
+    int i, j;
+
+    // Free lattice
+    for (i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+            free(lattice[i][j]);
+        }
+        free(lattice[i]);
+    }
+    free(lattice);
 }
 
 void mcstep(double T) {
@@ -122,10 +139,14 @@ int main(int argc, char **argv) {
     N = atoi(argv[1]);
     init_rnd(gus());
 
+    // Allocate lattice once
+    allocate_lattice();
+
     printf("# T\tM\tE\tchi\tC\n");
 
     for (T = 3.01; T > 0.0; T -= 0.01) {
-        initialize();
+        // Reset spins for new temperature
+        reset_spins();
 
         // Thermalization
         for (i = 0; i < 200000; i++) {
@@ -153,16 +174,10 @@ int main(int argc, char **argv) {
         C = (E2_sum - E_sum * E_sum) * N * N * N / (T * T);
 
         printf("%.2f\t%.6f\t%.6f\t%.6f\t%.6f\n", T, m_sum, E_sum, chi, C);
-
-        // Free lattice
-        for (i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                free(lattice[i][j]);
-            }
-            free(lattice[i]);
-        }
-        free(lattice);
     }
+
+    // Free lattice once
+    cleanup();
 
     return 0;
 }

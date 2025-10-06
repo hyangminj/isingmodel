@@ -1,6 +1,6 @@
 # Ising Model Monte Carlo Simulation
 
-A high-performance C implementation of 1D and 2D Ising model simulations using Monte Carlo methods with the Metropolis algorithm.
+A high-performance C implementation of 1D, 2D, and 3D Ising model simulations using Monte Carlo methods with the Metropolis algorithm.
 
 ## Overview
 
@@ -8,6 +8,8 @@ The Ising model is a mathematical model of ferromagnetism in statistical mechani
 
 - **1D Ising Model** (`ising1d.c`): One-dimensional chain with periodic boundary conditions
 - **2D Ising Model** (`ising2d.c`): Two-dimensional square lattice with periodic boundary conditions
+- **3D Ising Model** (`ising3d.c`): Three-dimensional cubic lattice with periodic boundary conditions
+- **Finite-Size Scaling Analysis**: FSS tools with Binder cumulant for 2D and 3D critical temperature determination
 - **Modern PCG Random Number Generator**: Fast, high-quality random numbers for Monte Carlo sampling
 - **Comprehensive Test Suite**: Validates random number generation and physics
 
@@ -38,13 +40,16 @@ make test
 
 # 2D Ising model with 50×50 lattice
 ./ising2d 50
+
+# 3D Ising model with 20×20×20 lattice
+./ising3d 20
 ```
 
 ## Detailed Usage
 
 ### Command Line Interface
 
-Both programs take the system size as a command line argument:
+All programs take the system size as a command line argument:
 
 ```bash
 # 1D: N spins
@@ -52,6 +57,9 @@ Both programs take the system size as a command line argument:
 
 # 2D: N×N lattice
 ./ising2d N
+
+# 3D: N×N×N lattice
+./ising3d N
 ```
 
 ### Output Format
@@ -122,6 +130,7 @@ We use the **Metropolis algorithm**:
 
 - **1D Ising**: No finite-temperature phase transition (T_c = 0)
 - **2D Ising**: Critical temperature T_c ≈ 2.269 (exact: 2/ln(1+√2))
+- **3D Ising**: Critical temperature T_c ≈ 4.51 (from high-precision simulations)
 
 ## Testing and Validation
 
@@ -133,7 +142,8 @@ make test
 The test suite validates:
 - PCG random number generator quality and reproducibility
 - Physics correctness (high-T → low magnetization, low-T → high magnetization)
-- 1D and 2D model functionality
+- 1D, 2D, and 3D model functionality
+- Binder cumulant calculation accuracy
 
 ### Quick Tests
 ```bash
@@ -152,22 +162,25 @@ make benchmark
 ### Computational Complexity
 - **1D**: O(N) per Monte Carlo step
 - **2D**: O(N²) per Monte Carlo step
-- **Memory**: O(N) for 1D, O(N²) for 2D
+- **3D**: O(N³) per Monte Carlo step
+- **Memory**: O(N) for 1D, O(N²) for 2D, O(N³) for 3D
 
 ### Recommended System Sizes
 - **1D**: N = 100-10000 (fast)
 - **2D**: N = 10-100 (N=100 takes ~hours)
+- **3D**: N = 10-30 (N=30 takes ~hours)
 
 ### Optimization Tips
 - Use smaller systems (N < 50) for 2D when testing
-- For production runs, consider running overnight for large 2D systems
+- Use even smaller systems (N < 20) for 3D when testing
+- For production runs, consider running overnight for large 2D/3D systems
 - The code is already optimized with `-O2` compilation
 
 ## Finite-Size Scaling and Binder Cumulant Analysis
 
 ### Overview
 
-The repository includes **finite-size scaling (FSS)** analysis tools to precisely determine the critical temperature T_c of the 2D Ising model using the **Binder cumulant crossing method**.
+The repository includes **finite-size scaling (FSS)** analysis tools to precisely determine the critical temperature T_c of the 2D and 3D Ising models using the **Binder cumulant crossing method**.
 
 ### What is Binder Cumulant?
 
@@ -181,8 +194,10 @@ This dimensionless quantity has a remarkable property: **at the critical tempera
 
 ### Running FSS Analysis
 
+#### 2D FSS Analysis
+
 ```bash
-# Compile the FSS version
+# Compile the 2D FSS version
 gcc -Wall -Wextra -Wpedantic -o ising2d_fss ising2d_fss.c -lm
 
 # Run simulation (this will take several hours)
@@ -192,7 +207,22 @@ gcc -Wall -Wextra -Wpedantic -o ising2d_fss ising2d_fss.c -lm
 python3 plot_binder.py
 ```
 
+#### 3D FSS Analysis
+
+```bash
+# Compile the 3D FSS version
+gcc -Wall -Wextra -Wpedantic -o ising3d_fss ising3d_fss.c -lm
+
+# Run simulation (this will take several hours)
+./ising3d_fss > fss_data_3d.txt
+
+# Generate plots
+python3 plot_binder_3d.py
+```
+
 ### FSS Parameters
+
+#### 2D FSS Parameters
 
 - **System Sizes**: L = 8, 16, 24, 32, 48, 64
 - **Temperature Range**: T = 2.6 → 1.9 (focused near T_c ≈ 2.269)
@@ -200,12 +230,23 @@ python3 plot_binder.py
 - **Thermalization**: 200,000 Monte Carlo steps per temperature
 - **Measurement**: 200,000 Monte Carlo steps per temperature
 
+#### 3D FSS Parameters
+
+- **System Sizes**: L = 4, 6, 8, 10, 12, 16
+- **Temperature Range**: T = 5.5 → 3.5 (focused near T_c ≈ 4.51)
+- **Temperature Resolution**: ΔT = 0.02
+- **Thermalization**: 200,000 Monte Carlo steps per temperature
+- **Measurement**: 200,000 Monte Carlo steps per temperature
+- **Note**: Smaller system sizes due to O(N³) scaling
+
 ### Output Files
 
-The analysis generates two plots:
+#### 2D FSS Plots
+
+The 2D analysis generates two plots:
 
 1. **binder_crossing.png**: Binder cumulant crossing plot
-   - Shows all system sizes crossing at T_c
+   - Shows all system sizes crossing at T_c ≈ 2.269
    - Includes zoomed view near the critical point
 
 ![Binder Cumulant Crossing](binder_crossing.png)
@@ -217,6 +258,22 @@ The analysis generates two plots:
    - Heat capacity vs temperature for all L
 
 ![Complete FSS Analysis](fss_complete_analysis.png)
+
+#### 3D FSS Plots
+
+The 3D analysis generates two plots:
+
+1. **binder_crossing_3d.png**: Binder cumulant crossing plot for 3D
+   - Shows all system sizes crossing at T_c ≈ 4.51
+   - Includes zoomed view near the critical point
+
+![3D Binder Cumulant Crossing](binder_crossing_3d.png)
+
+2. **fss_complete_analysis_3d.png**: Complete 3D finite-size scaling analysis
+   - All thermodynamic quantities vs temperature for all L
+   - Shows critical exponents: β ≈ 0.326, γ ≈ 1.237, ν ≈ 0.630
+
+![3D Complete FSS Analysis](fss_complete_analysis_3d.png)
 
 ### Output Data Format
 
@@ -230,10 +287,19 @@ N  Temperature  Magnetization  Energy  Susceptibility  Heat_Capacity  Binder_Cum
 
 ### Physical Interpretation
 
+#### 2D Interpretation
+
 - **Crossing Point**: The temperature where all Binder cumulant curves intersect is the critical temperature T_c
 - **Finite-Size Effects**: Larger systems show sharper transitions near T_c
 - **Critical Value**: The Binder cumulant at T_c approaches U* ≈ 0.610 (universal value for 2D Ising)
 - **Exact T_c**: The 2D Ising model has T_c = 2/ln(1+√2) ≈ 2.269185... (Onsager's exact solution)
+
+#### 3D Interpretation
+
+- **Crossing Point**: All Binder cumulant curves intersect at T_c ≈ 4.51
+- **Different Universality Class**: 3D Ising belongs to a different universality class than 2D
+- **Critical Exponents**: β ≈ 0.326, γ ≈ 1.237, ν ≈ 0.630 (different from 2D values)
+- **Real Systems**: 3D Ising model describes real ferromagnetic materials and liquid-gas transitions
 
 ### Why This Works
 
@@ -247,16 +313,19 @@ The Binder cumulant method is powerful because:
 
 ```
 isingmodel/
-├── README.md          # This file
-├── CLAUDE.md          # Developer documentation
-├── Makefile           # Build system
-├── pcg_random.h       # PCG random number generator
-├── ising1d.c          # 1D Ising model implementation
-├── ising2d.c          # 2D Ising model implementation
-├── ising2d_fss.c      # 2D FSS analysis with Binder cumulant
-├── plot_binder.py     # Python plotting script for FSS analysis
-├── test_suite.c       # Comprehensive test suite
-└── (executables)      # Generated by make
+├── README.md            # This file
+├── CLAUDE.md            # Developer documentation
+├── Makefile             # Build system
+├── pcg_random.h         # PCG random number generator
+├── ising1d.c            # 1D Ising model implementation
+├── ising2d.c            # 2D Ising model implementation
+├── ising2d_fss.c        # 2D FSS analysis with Binder cumulant
+├── ising3d.c            # 3D Ising model implementation
+├── ising3d_fss.c        # 3D FSS analysis with Binder cumulant
+├── plot_binder.py       # Python plotting script for 2D FSS analysis
+├── plot_binder_3d.py    # Python plotting script for 3D FSS analysis
+├── test_suite.c         # Comprehensive test suite
+└── (executables)        # Generated by make
 ```
 
 ## Build System
@@ -296,6 +365,7 @@ Near the critical temperature T_c, physical quantities follow power laws:
 - Heat capacity: C ∝ |T - T_c|^(-α)
 
 For 2D Ising: β = 1/8, γ = 7/4, α = 0 (logarithmic)
+For 3D Ising: β ≈ 0.326, γ ≈ 1.237, α ≈ 0.110, ν ≈ 0.630
 
 ## References
 
@@ -312,7 +382,7 @@ This code is provided for educational and research purposes.
 
 # 이징 모델 몬테카를로 시뮬레이션 (한국어)
 
-메트로폴리스 알고리즘을 사용한 몬테카를로 방법으로 구현된 고성능 C 기반 1D 및 2D 이징 모델 시뮬레이션입니다.
+메트로폴리스 알고리즘을 사용한 몬테카를로 방법으로 구현된 고성능 C 기반 1D, 2D, 3D 이징 모델 시뮬레이션입니다.
 
 ## 개요
 
@@ -320,6 +390,8 @@ This code is provided for educational and research purposes.
 
 - **1D 이징 모델** (`ising1d.c`): 주기적 경계 조건을 가진 일차원 체인
 - **2D 이징 모델** (`ising2d.c`): 주기적 경계 조건을 가진 이차원 정사각 격자
+- **3D 이징 모델** (`ising3d.c`): 주기적 경계 조건을 가진 삼차원 큐빅 격자
+- **유한 크기 스케일링 분석**: 2D 및 3D 임계 온도 결정을 위한 Binder cumulant를 사용한 FSS 도구
 - **현대적 PCG 난수 생성기**: 몬테카를로 샘플링을 위한 빠르고 고품질의 난수
 - **포괄적 테스트 스위트**: 난수 생성 및 물리학 검증
 
@@ -350,13 +422,16 @@ make test
 
 # 50×50 격자를 가진 2D 이징 모델
 ./ising2d 50
+
+# 20×20×20 격자를 가진 3D 이징 모델
+./ising3d 20
 ```
 
 ## 상세 사용법
 
 ### 명령줄 인터페이스
 
-두 프로그램 모두 시스템 크기를 명령줄 인수로 받습니다:
+모든 프로그램이 시스템 크기를 명령줄 인수로 받습니다:
 
 ```bash
 # 1D: N개 스핀
@@ -364,6 +439,9 @@ make test
 
 # 2D: N×N 격자
 ./ising2d N
+
+# 3D: N×N×N 격자
+./ising3d N
 ```
 
 ### 출력 형식
@@ -434,6 +512,7 @@ H = -J Σ s_i s_j
 
 - **1D 이징**: 유한 온도 상전이 없음 (T_c = 0)
 - **2D 이징**: 임계 온도 T_c ≈ 2.269 (정확값: 2/ln(1+√2))
+- **3D 이징**: 임계 온도 T_c ≈ 4.51 (고정밀도 시뮬레이션 결과)
 
 ## 테스트 및 검증
 
@@ -445,7 +524,8 @@ make test
 테스트 스위트는 다음을 검증합니다:
 - PCG 난수 생성기 품질 및 재현성
 - 물리학적 정확성 (고온 → 낮은 자화율, 저온 → 높은 자화율)
-- 1D 및 2D 모델 기능
+- 1D, 2D, 3D 모델 기능
+- Binder cumulant 계산 정확성
 
 ### 빠른 테스트
 ```bash
@@ -464,22 +544,25 @@ make benchmark
 ### 계산 복잡도
 - **1D**: 몬테카를로 단계당 O(N)
 - **2D**: 몬테카를로 단계당 O(N²)
-- **메모리**: 1D는 O(N), 2D는 O(N²)
+- **3D**: 몬테카를로 단계당 O(N³)
+- **메모리**: 1D는 O(N), 2D는 O(N²), 3D는 O(N³)
 
 ### 권장 시스템 크기
 - **1D**: N = 100-10000 (빠름)
 - **2D**: N = 10-100 (N=100은 수 시간 소요)
+- **3D**: N = 10-30 (N=30은 수 시간 소요)
 
 ### 최적화 팁
 - 테스트 시 2D는 작은 시스템(N < 50) 사용
-- 실제 연구용으로는 큰 2D 시스템을 밤새 실행 고려
+- 테스트 시 3D는 더 작은 시스템(N < 20) 사용
+- 실제 연구용으로는 큰 2D/3D 시스템을 밤새 실행 고려
 - 코드는 이미 `-O2` 컴파일 최적화됨
 
 ## 유한 크기 스케일링 및 Binder Cumulant 분석
 
 ### 개요
 
-이 저장소는 **Binder cumulant 교차점 방법**을 사용하여 2D 이징 모델의 임계 온도 T_c를 정밀하게 결정하는 **유한 크기 스케일링(FSS)** 분석 도구를 포함합니다.
+이 저장소는 **Binder cumulant 교차점 방법**을 사용하여 2D 및 3D 이징 모델의 임계 온도 T_c를 정밀하게 결정하는 **유한 크기 스케일링(FSS)** 분석 도구를 포함합니다.
 
 ### Binder Cumulant란?
 
@@ -493,8 +576,10 @@ U_L = 1 - <M⁴> / (3<M²>²)
 
 ### FSS 분석 실행
 
+#### 2D FSS 분석
+
 ```bash
-# FSS 버전 컴파일
+# 2D FSS 버전 컴파일
 gcc -Wall -Wextra -Wpedantic -o ising2d_fss ising2d_fss.c -lm
 
 # 시뮬레이션 실행 (수 시간 소요)
@@ -504,7 +589,22 @@ gcc -Wall -Wextra -Wpedantic -o ising2d_fss ising2d_fss.c -lm
 python3 plot_binder.py
 ```
 
+#### 3D FSS 분석
+
+```bash
+# 3D FSS 버전 컴파일
+gcc -Wall -Wextra -Wpedantic -o ising3d_fss ising3d_fss.c -lm
+
+# 시뮬레이션 실행 (수 시간 소요)
+./ising3d_fss > fss_data_3d.txt
+
+# 플롯 생성
+python3 plot_binder_3d.py
+```
+
 ### FSS 매개변수
+
+#### 2D FSS 매개변수
 
 - **시스템 크기**: L = 8, 16, 24, 32, 48, 64
 - **온도 범위**: T = 2.6 → 1.9 (T_c ≈ 2.269 근처에 집중)
@@ -512,12 +612,23 @@ python3 plot_binder.py
 - **열평형화**: 온도당 200,000 몬테카를로 단계
 - **측정**: 온도당 200,000 몬테카를로 단계
 
+#### 3D FSS 매개변수
+
+- **시스템 크기**: L = 4, 6, 8, 10, 12, 16
+- **온도 범위**: T = 5.5 → 3.5 (T_c ≈ 4.51 근처에 집중)
+- **온도 해상도**: ΔT = 0.02
+- **열평형화**: 온도당 200,000 몬테카를로 단계
+- **측정**: 온도당 200,000 몬테카를로 단계
+- **참고**: O(N³) 스케일링으로 인한 작은 시스템 크기
+
 ### 출력 파일
 
-분석은 두 개의 플롯을 생성합니다:
+#### 2D FSS 플롯
+
+2D 분석은 두 개의 플롯을 생성합니다:
 
 1. **binder_crossing.png**: Binder cumulant 교차점 플롯
-   - T_c에서 모든 시스템 크기가 교차하는 것을 보여줌
+   - T_c ≈ 2.269에서 모든 시스템 크기가 교차하는 것을 보여줌
    - 임계점 근처 확대 뷰 포함
 
 ![Binder Cumulant 교차점](binder_crossing.png)
@@ -529,6 +640,22 @@ python3 plot_binder.py
    - 모든 L에 대한 열용량 vs 온도
 
 ![완전한 FSS 분석](fss_complete_analysis.png)
+
+#### 3D FSS 플롯
+
+3D 분석은 두 개의 플롯을 생성합니다:
+
+1. **binder_crossing_3d.png**: 3D Binder cumulant 교차점 플롯
+   - T_c ≈ 4.51에서 모든 시스템 크기가 교차하는 것을 보여줌
+   - 임계점 근처 확대 뷰 포함
+
+![3D Binder Cumulant 교차점](binder_crossing_3d.png)
+
+2. **fss_complete_analysis_3d.png**: 완전한 3D 유한 크기 스케일링 분석
+   - 모든 L에 대한 모든 열역학적 양 vs 온도
+   - 임계 지수를 보여줌: β ≈ 0.326, γ ≈ 1.237, ν ≈ 0.630
+
+![3D 완전한 FSS 분석](fss_complete_analysis_3d.png)
 
 ### 출력 데이터 형식
 
@@ -542,10 +669,19 @@ N  Temperature  Magnetization  Energy  Susceptibility  Heat_Capacity  Binder_Cum
 
 ### 물리적 해석
 
+#### 2D 해석
+
 - **교차점**: 모든 Binder cumulant 곡선이 교차하는 온도가 임계 온도 T_c입니다
 - **유한 크기 효과**: 더 큰 시스템은 T_c 근처에서 더 날카로운 전이를 보입니다
 - **임계값**: T_c에서 Binder cumulant는 U* ≈ 0.610에 접근합니다 (2D 이징의 보편적 값)
 - **정확한 T_c**: 2D 이징 모델은 T_c = 2/ln(1+√2) ≈ 2.269185... (Onsager의 정확해)
+
+#### 3D 해석
+
+- **교차점**: 모든 Binder cumulant 곡선이 T_c ≈ 4.51에서 교차합니다
+- **다른 보편성 클래스**: 3D 이징은 2D와 다른 보편성 클래스에 속합니다
+- **임계 지수**: β ≈ 0.326, γ ≈ 1.237, ν ≈ 0.630 (2D 값과 다름)
+- **실제 시스템**: 3D 이징 모델은 실제 강자성 물질과 액체-기체 전이를 설명합니다
 
 ### 왜 이 방법이 작동하는가
 
@@ -559,16 +695,19 @@ Binder cumulant 방법이 강력한 이유:
 
 ```
 isingmodel/
-├── README.md          # 이 파일
-├── CLAUDE.md          # 개발자 문서
-├── Makefile           # 빌드 시스템
-├── pcg_random.h       # PCG 난수 생성기
-├── ising1d.c          # 1D 이징 모델 구현
-├── ising2d.c          # 2D 이징 모델 구현
-├── ising2d_fss.c      # Binder cumulant를 사용한 2D FSS 분석
-├── plot_binder.py     # FSS 분석을 위한 Python 플로팅 스크립트
-├── test_suite.c       # 포괄적 테스트 스위트
-└── (실행파일들)       # make로 생성됨
+├── README.md            # 이 파일
+├── CLAUDE.md            # 개발자 문서
+├── Makefile             # 빌드 시스템
+├── pcg_random.h         # PCG 난수 생성기
+├── ising1d.c            # 1D 이징 모델 구현
+├── ising2d.c            # 2D 이징 모델 구현
+├── ising2d_fss.c        # Binder cumulant를 사용한 2D FSS 분석
+├── ising3d.c            # 3D 이징 모델 구현
+├── ising3d_fss.c        # Binder cumulant를 사용한 3D FSS 분석
+├── plot_binder.py       # 2D FSS 분석을 위한 Python 플로팅 스크립트
+├── plot_binder_3d.py    # 3D FSS 분석을 위한 Python 플로팅 스크립트
+├── test_suite.c         # 포괄적 테스트 스위트
+└── (실행파일들)         # make로 생성됨
 ```
 
 ## 빌드 시스템
@@ -608,6 +747,7 @@ make help       # 모든 옵션 표시
 - 열용량: C ∝ |T - T_c|^(-α)
 
 2D 이징의 경우: β = 1/8, γ = 7/4, α = 0 (로그적)
+3D 이징의 경우: β ≈ 0.326, γ ≈ 1.237, α ≈ 0.110, ν ≈ 0.630
 
 ## 참고문헌
 

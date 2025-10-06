@@ -11,4 +11,11 @@ test_suite
 # Other compiled outputs
 *.out
 *.exe
+
+# 3D Ising model binaries
+ising3d
+ising3d_fss
+
+# Data files
 *.txt
+fss_data*.txt
